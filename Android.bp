@@ -120,5 +120,17 @@ rust_binary {
     srcs: [
         "examples/sysfs_monitor.rs",
     ],
+}
 
+rust_binary {
+    name: "ueventd_devlist",
+    defaults: ["libueventd_deps_defaults"],
+    host_supported: true,
+    rustlibs: [
+        "libenv_logger",
+        "libueventd",
+    ],
+    srcs: [
+        "examples/devlist.rs",
+    ],
 }
