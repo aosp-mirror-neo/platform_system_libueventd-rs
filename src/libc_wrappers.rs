@@ -20,18 +20,11 @@ use std::os::unix::fs::MetadataExt;
 #[cfg(target_os = "android")]
 pub fn get_devnum(metadata: &Metadata) -> (u32, u32) {
     let devnum = metadata.rdev() as libc::dev_t;
-    // SAFETY: This should actually be safe because major and minor
-    // do very little. In any event constrain this as much as possible.
-    // Also, for some reason the compiler complains that it finds i32
-    // instead of u32 for the return values of each function, despite the
-    // documentation and source saying these both return c_uint,
-    // which is u32.
-    unsafe { (libc::major(devnum).try_into().unwrap(), libc::minor(devnum).try_into().unwrap()) }
+    (libc::major(devnum).try_into().unwrap(), libc::minor(devnum).try_into().unwrap())
 }
 
 #[cfg(target_os = "linux")]
 pub fn get_devnum(metadata: &Metadata) -> (u32, u32) {
     let devnum = metadata.rdev() as libc::dev_t;
-    // SAFETY: see above.
-    unsafe { (libc::major(devnum), libc::minor(devnum)) }
+    (libc::major(devnum), libc::minor(devnum))
 }
