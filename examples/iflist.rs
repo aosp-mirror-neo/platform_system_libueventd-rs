@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
             None => String::from("no underlying device"),
         };
-        println!("{:>4} {}: {}", index, name, underlying_details);
+        println!("{index:>4} {name}: {underlying_details}");
     }
 
     Ok(())

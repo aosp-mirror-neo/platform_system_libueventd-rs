@@ -149,8 +149,8 @@ impl Device {
         devnum: DeviceNumber,
     ) -> Option<Device> {
         let syspath_link = match devnum {
-            DeviceNumber::Block { major, minor } => format!("dev/block/{}:{}", major, minor),
-            DeviceNumber::Char { major, minor } => format!("dev/char/{}:{}", major, minor),
+            DeviceNumber::Block { major, minor } => format!("dev/block/{major}:{minor}"),
+            DeviceNumber::Char { major, minor } => format!("dev/char/{major}:{minor}"),
         };
         Device::with_root_and_syspath(
             &sysfs_root,
@@ -311,7 +311,7 @@ mod tests {
 
         let sysfs_dir = match MockSysfs::new(sysfs) {
             Ok(ms) => ms,
-            Err(e) => panic!("Could not create mock sysfs: {}", e),
+            Err(e) => panic!("Could not create mock sysfs: {e}"),
         };
 
         let sysfs_path = sysfs_dir.path().join("squads/31a/kayamori_ruka");
@@ -336,7 +336,7 @@ mod tests {
 
         let sysfs_dir = match MockSysfs::new(sysfs) {
             Ok(ms) => ms,
-            Err(e) => panic!("Could not create mock sysfs: {}", e),
+            Err(e) => panic!("Could not create mock sysfs: {e}"),
         };
 
         let sysfs_path = sysfs_dir.path().join("squads/31a/kayamori_ruka");
@@ -360,7 +360,7 @@ mod tests {
 
         let sysfs_dir = match MockSysfs::new(sysfs) {
             Ok(ms) => ms,
-            Err(e) => panic!("Could not create mock sysfs: {}", e),
+            Err(e) => panic!("Could not create mock sysfs: {e}"),
         };
 
         let sysfs_path = sysfs_dir.path().join("squads/31a/kunimi_tama");
@@ -382,7 +382,7 @@ mod tests {
 
         let sysfs_dir = match MockSysfs::new(sysfs) {
             Ok(ms) => ms,
-            Err(e) => panic!("Could not create mock sysfs: {}", e),
+            Err(e) => panic!("Could not create mock sysfs: {e}"),
         };
 
         let sysfs_path = sysfs_dir.path().join("squads/31c/yamawaki_bon_ivar");
@@ -432,7 +432,7 @@ mod tests {
 
         let sysfs_dir = match MockSysfs::new(sysfs) {
             Ok(ms) => ms,
-            Err(e) => panic!("Could not create mock sysfs: {}", e),
+            Err(e) => panic!("Could not create mock sysfs: {e}"),
         };
 
         {
@@ -489,7 +489,7 @@ mod tests {
 
         let sysfs_dir = match MockSysfs::new(sysfs) {
             Ok(ms) => ms,
-            Err(e) => panic!("Could not create mock sysfs: {}", e),
+            Err(e) => panic!("Could not create mock sysfs: {e}"),
         };
 
         let sysfs_path = sysfs_dir.path().join("squads/31e/ohshima_isuzu/memoria/key_to_victory");
@@ -537,7 +537,7 @@ mod tests {
 
         let sysfs_dir = match MockSysfs::new(sysfs) {
             Ok(ms) => ms,
-            Err(e) => panic!("Could not create mock sysfs: {}", e),
+            Err(e) => panic!("Could not create mock sysfs: {e}"),
         };
 
         {
@@ -569,7 +569,7 @@ mod tests {
 
         let sysfs_dir = match MockSysfs::new(sysfs) {
             Ok(ms) => ms,
-            Err(e) => panic!("Could not create mock sysfs: {}", e),
+            Err(e) => panic!("Could not create mock sysfs: {e}"),
         };
 
         let sysfs_path = sysfs_dir.path().join("squads/30g/kura_satomi/memoria/goddess_of_harvest");
@@ -599,7 +599,7 @@ mod tests {
 
         let sysfs_dir = match MockSysfs::new(sysfs) {
             Ok(ms) => ms,
-            Err(e) => panic!("Could not create mock sysfs: {}", e),
+            Err(e) => panic!("Could not create mock sysfs: {e}"),
         };
 
         let device = Device::with_root_and_devnum(
