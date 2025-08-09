@@ -139,7 +139,7 @@ impl Watcher {
                     device,
                 });
                 if let Err(err) = res {
-                    warn!("Failed to send device event: {}", err);
+                    warn!("Failed to send device event: {err}");
                 }
             }
             return;
@@ -168,7 +168,7 @@ impl Watcher {
             device,
         });
         if let Err(err) = res {
-            warn!("Failed to send device event: {}", err);
+            warn!("Failed to send device event: {err}");
         }
     }
 
@@ -210,7 +210,7 @@ impl Watcher {
         info!("Watching for devices");
         while !self.event_tx.is_closed() {
             if let Err(err) = self.handle_single_event().await {
-                error!("Got error handling event: {}", err);
+                error!("Got error handling event: {err}");
                 continue;
             }
         }

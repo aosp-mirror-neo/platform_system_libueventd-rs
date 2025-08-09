@@ -61,7 +61,7 @@ fn get_device<P: AsRef<Path>>(sysfs_root: P, link_message: &LinkMessage) -> Opti
         _ => None,
     })?;
 
-    let sysfs_path = sysfs_root.as_ref().join(format!("class/net/{}", name));
+    let sysfs_path = sysfs_root.as_ref().join(format!("class/net/{name}"));
     Device::with_root_and_syspath(sysfs_root, sysfs_path)
 }
 
@@ -121,7 +121,7 @@ impl NetInterfaceWatcher {
     async fn handle_new_link(&mut self, msg: LinkMessage) -> Result<()> {
         let index = msg.header.index;
         let device = get_device(&self.root_sys_dir, &msg)
-            .ok_or(Error::Other(format!("Could not resolve device with index {}", index)))?;
+            .ok_or(Error::Other(format!("Could not resolve device with index {index}")))?;
 
         if let Some(existing_device) = self.tracked_interfaces.get(&index) {
             if device == *existing_device {
@@ -137,7 +137,7 @@ impl NetInterfaceWatcher {
             device,
         });
         if let Err(err) = res {
-            warn!("Failed to send device event: {}", err);
+            warn!("Failed to send device event: {err}");
         }
         Ok(())
     }
@@ -146,8 +146,7 @@ impl NetInterfaceWatcher {
         let index = msg.header.index;
         let Some(device) = self.tracked_interfaces.remove(&index) else {
             return Err(Error::Other(format!(
-                "Could not find tracked interface associated with index {}",
-                index
+                "Could not find tracked interface associated with index {index}"
             )));
         };
 
@@ -157,7 +156,7 @@ impl NetInterfaceWatcher {
             device,
         });
         if let Err(err) = res {
-            warn!("Failed to send device event: {}", err);
+            warn!("Failed to send device event: {err}");
         }
         Ok(())
     }
@@ -193,7 +192,7 @@ impl NetInterfaceWatcher {
                         Ok(None) => break,
                         // initialization error, exit early
                         Err(err) => {
-                            error!("Failed to initialize net interface event stream: {}", err);
+                            error!("Failed to initialize net interface event stream: {err}");
                             return;
                         }
                     }
@@ -234,6 +233,6 @@ pub async fn get_interface_list() -> Result<Vec<(u32, Device)>> {
     std::mem::drop(handle);
     join_handle
         .await
-        .map_err(|err| Error::Other(format!("Failed to close netlink connection: {}", err)))?;
+        .map_err(|err| Error::Other(format!("Failed to close netlink connection: {err}")))?;
     list
 }

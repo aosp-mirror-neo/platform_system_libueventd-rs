@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         };
 
         let DeviceType::NetInterface { index } = event.device_type else {
-            warn!("got non-net interface event {:?}", event);
+            warn!("got non-net interface event {event:?}");
             continue;
         };
 
@@ -55,6 +55,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             EventType::Remove => "-",
         };
 
-        println!("{} {:>4} {}", event_type, index, name);
+        println!("{event_type} {index:>4} {name}");
     }
 }
