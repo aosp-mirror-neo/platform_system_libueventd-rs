@@ -43,8 +43,9 @@ impl MockSysfs {
     pub fn new(sysfs: SysfsFile) -> io::Result<MockSysfs> {
         let mut temp_root = temp_dir();
         temp_root.push(format!(
-            "libueventd_unittest_sys_{}",
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros()
+            "libueventd_unittest_sys_{}_{:?}",
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros(),
+            std::thread::current().id()
         ));
 
         let res = MockSysfs { root: temp_root };
