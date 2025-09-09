@@ -28,9 +28,14 @@ pub mod errors;
 /// Module `event` specifies the types of events you can get from the various
 /// watchers.
 pub mod event;
+/// Module `kuevent_wrappers` provides wrappers around the kuevent library.
+pub mod kuevent_wrappers;
 /// Module `net_interface` has functions and structs for working with net
 /// interfaces and listening for changes in net interfaces.
 pub mod net_interface;
+/// Module `sysfs_watcher` has functions and structs for working with sysfs
+/// devices and listening for changes in sysfs devices.
+pub mod sysfs_watcher;
 
 mod libc_wrappers;
 

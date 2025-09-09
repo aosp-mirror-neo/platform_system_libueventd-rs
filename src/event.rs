@@ -14,6 +14,7 @@
 
 use crate::device::Device;
 
+use kobject_uevent::UEvent;
 use std::path::PathBuf;
 
 /// Enum representing the type of event.
@@ -23,6 +24,8 @@ pub enum EventType {
     Add,
     /// A device is being removed.
     Remove,
+    /// A device is being changed.
+    Change,
 }
 
 /// Enum representing the type of device an event concerns. It will also
@@ -39,6 +42,8 @@ pub enum DeviceType {
         /// Index of the net interface.
         index: u32,
     },
+    /// A raw uevent.
+    UEvent(UEvent),
 }
 
 /// Struct representing a device event. These are emitted by the watchers when
