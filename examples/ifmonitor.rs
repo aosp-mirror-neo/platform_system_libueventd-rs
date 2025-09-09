@@ -53,6 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let event_type = match event.event_type {
             EventType::Add => "+",
             EventType::Remove => "-",
+            EventType::Change => "c",
         };
 
         println!("{event_type} {index:>4} {name}");
