@@ -34,6 +34,7 @@ rust_defaults {
         "libnetlink_sys",
         "libkobject_uevent",
         "libenv_logger",
+        "libtempfile",
     ],
     proc_macros: [
         "libasync_trait",
@@ -119,6 +120,5 @@ rust_binary {
     srcs: [
         "examples/sysfs_monitor.rs",
     ],
-
 
 }

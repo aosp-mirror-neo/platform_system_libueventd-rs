@@ -13,12 +13,11 @@
 // limitations under the License.
 
 use std::collections::HashMap;
-use std::env::temp_dir;
 use std::fs;
 use std::io;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use tempfile::tempdir;
 
 /// Enum representing different types of files.
 pub enum SysfsFile {
@@ -38,16 +37,9 @@ pub struct MockSysfs {
 impl MockSysfs {
     /// Instantiates the file tree described by `sysfs` in a temporary directory
     /// and returns the object representing it.
-    ///
-    /// This directory will be removed when the `MockSysfs` object is dropped.
     pub fn new(sysfs: SysfsFile) -> io::Result<MockSysfs> {
-        let mut temp_root = temp_dir();
-        temp_root.push(format!(
-            "libueventd_unittest_sys_{}_{:?}",
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros(),
-            std::thread::current().id()
-        ));
-
+        let temp_dir = tempdir()?;
+        let temp_root = temp_dir.into_path();
         let res = MockSysfs { root: temp_root };
         Self::create_file(res.path(), &sysfs)?;
         Ok(res)
@@ -71,11 +63,5 @@ impl MockSysfs {
             SysfsFile::RegularFile(contents) => fs::write(path, contents),
             SysfsFile::Symlink(contents) => symlink(contents, path),
         }
-    }
-}
-
-impl Drop for MockSysfs {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(self.path());
     }
 }
