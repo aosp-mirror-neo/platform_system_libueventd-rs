@@ -30,6 +30,11 @@ rust_defaults {
         "libthiserror",
         "libtokio",
         "libtokio_stream",
+        "libasync_stream",
+        "libnetlink_sys",
+        "libkobject_uevent",
+        "libenv_logger",
+        "libtempfile",
     ],
     proc_macros: [
         "libasync_trait",
@@ -89,4 +94,31 @@ rust_binary {
     srcs: [
         "examples/ifmonitor.rs",
     ],
+}
+
+rust_binary {
+    name: "kuevent_monitor",
+    defaults: ["libueventd_deps_defaults"],
+    host_supported: true,
+    rustlibs: [
+        "libenv_logger",
+        "libueventd",
+    ],
+    srcs: [
+        "examples/kuevent_monitor.rs",
+    ],
+}
+
+rust_binary {
+    name: "sysfs_monitor",
+    defaults: ["libueventd_deps_defaults"],
+    host_supported: true,
+    rustlibs: [
+        "libenv_logger",
+        "libueventd",
+    ],
+    srcs: [
+        "examples/sysfs_monitor.rs",
+    ],
+
 }

@@ -27,6 +27,19 @@ pub enum Error {
     #[error("Netlink error: {0}")]
     NetlinkError(#[from] rtnetlink::Error),
 
+    /// Failed to create netlink socket.
+    #[error("Failed to create netlink socket")]
+    CreateSocket(#[source] io::Error),
+    /// Failed to bind netlink socket.
+    #[error("Failed to bind netlink socket")]
+    BindSocket(#[source] io::Error),
+    /// Failed to receive from netlink socket.
+    #[error("Failed to receive from netlink socket")]
+    Recv(#[source] io::Error),
+    /// Failed to parse uevent message.
+    #[error("Failed to parse uevent message: {0}")]
+    ParseFailure(String),
+
     /// Catch-all for other errors.
     #[error("Other error: {0}")]
     Other(String),
