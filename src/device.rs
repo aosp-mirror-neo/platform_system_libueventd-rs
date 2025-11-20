@@ -169,7 +169,13 @@ impl Device {
         P: AsRef<Path>,
         Q: AsRef<Path>,
     {
-        let metadata = fs::metadata(&devfs_path).ok()?;
+        let metadata = if devfs_path.as_ref().to_str()?.starts_with("/dev/pts/") {
+            // PTY ports /dev/pts/N don't have device info links /sys/dev/char/136:N,
+            // so for them we use device info for PTY port /dev/ptmx.
+            fs::metadata(Path::new("/dev/ptmx")).ok()?
+        } else {
+            fs::metadata(&devfs_path).ok()?
+        };
 
         let chardev = if metadata.file_type().is_char_device() {
             true
