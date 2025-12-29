@@ -11,4 +11,4 @@ stream of events.
   `mmm system/libueventd-rs` from the repo root
 
 - Run the unit tests:
-  `atest libueventd_test libmbim_packets_test libmbim_api_generator_test`
+  `atest libueventd_test`
