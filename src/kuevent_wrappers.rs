@@ -1,10 +1,9 @@
 use crate::errors::Error;
 use futures::Stream;
+use kobject_uevent::UEvent;
 use netlink_sys::constants::NETLINK_KOBJECT_UEVENT;
 use netlink_sys::Socket;
 use netlink_sys::SocketAddr;
-// use std::collections::HashMap;
-use kobject_uevent;
 use tokio::io::unix::AsyncFd;
 
 /// The netlink group for kernel uevents.
@@ -20,7 +19,7 @@ const UEVENT_BUFFER_SIZE: usize = 8192;
 /// # Returns
 /// A `Result` containing a `Stream` that yields `Result<UEvent, Error>` for each event from the
 /// kernel, or an `Error` if the socket could not be set up.
-pub fn uevent_stream() -> Result<impl Stream<Item = Result<kobject_uevent::UEvent, Error>>, Error> {
+pub fn uevent_stream() -> Result<impl Stream<Item = Result<UEvent, Error>>, Error> {
     // 1. Create and bind the netlink socket
     let addr = SocketAddr::new(0, KOBJ_NL_GROUP_UEVENT);
     let mut socket = Socket::new(NETLINK_KOBJECT_UEVENT).map_err(Error::CreateSocket)?;
@@ -41,7 +40,7 @@ pub fn uevent_stream() -> Result<impl Stream<Item = Result<kobject_uevent::UEven
             }) {
                 Ok(Ok(len)) => {
                     // let uevent = parse_uevent(&buffer[..len])?;
-                    let uevent = kobject_uevent::UEvent::from_netlink_packet(&buffer[..len])
+                    let uevent = UEvent::from_netlink_packet(&buffer[..len])
                         .map_err(|e| Error::ParseFailure(e.to_string()))?;
                     yield uevent;
                 },

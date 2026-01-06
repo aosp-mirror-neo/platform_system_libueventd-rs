@@ -3,7 +3,6 @@ use crate::errors::Result;
 use crate::event::{DeviceEvent, DeviceType, EventType};
 
 use crate::kuevent_wrappers::uevent_stream;
-// use crate::kuevent_wrappers::UEvent;
 use futures::{pin_mut, StreamExt};
 use kobject_uevent::ActionType;
 use kobject_uevent::UEvent;
@@ -14,7 +13,7 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::Stream;
 
-/// Actor which watches the typec and usb_pdsysfs through netlink socket.
+/// Actor which watches sysfs events through netlink socket.
 pub struct SysfsWatcher {
     // Root directory for sysfs. Typically /sys, but may be different in
     // tests.
@@ -65,6 +64,13 @@ impl SysfsWatcher {
 
     async fn handle_uevent(&mut self, uevent: UEvent) -> Result<()> {
         info!("Handling uevent: {}", uevent.devpath.display());
+
+        if let Some(watched) = &self.watched_subsystems {
+            if !watched.contains(&uevent.subsystem) {
+                return Ok(());
+            }
+        }
+
         let device_path =
             self.root_sys_dir.join(uevent.devpath.strip_prefix("/").unwrap_or(&uevent.devpath));
         let device_type = DeviceType::UEvent(uevent.clone());
@@ -102,11 +108,7 @@ impl SysfsWatcher {
                 self.tracked_devices.insert(device_path.clone(), device.clone());
             }
         }
-        if let Some(watched) = &self.watched_subsystems {
-            if !watched.contains(&uevent.subsystem) {
-                return Ok(());
-            }
-        }
+
         let res = self.event_tx.send(DeviceEvent { event_type, device_type, device });
         if let Err(err) = res {
             warn!("Failed to send device event: {}", err);
@@ -119,7 +121,7 @@ impl SysfsWatcher {
     /// You will need to do this for it to produce any events. To avoid blocking,
     /// you should spawn a separate task to run the event loop in.
     pub async fn run_event_loop(&mut self) {
-        error!("SysfsWatcher: Initialized, listening for events");
+        info!("SysfsWatcher: Initialized, listening for events");
         let stream = match uevent_stream() {
             Ok(s) => s,
             Err(e) => {
@@ -281,5 +283,51 @@ mod tests {
         assert!(watcher.tracked_devices.is_empty());
         let event = stream.next().await.unwrap();
         assert_eq!(event.event_type, EventType::Remove);
+    }
+
+    #[tokio::test]
+    async fn test_handle_uevent_filtered() {
+        init_logging();
+        let sysfs = SysfsFile::Dir(HashMap::from([
+            (
+                "class/typec/port0",
+                SysfsFile::Dir(HashMap::from([
+                    ("uevent", SysfsFile::RegularFile("")),
+                    ("subsystem", SysfsFile::Symlink("../../typec")),
+                ])),
+            ),
+            (
+                "class/other/dev0",
+                SysfsFile::Dir(HashMap::from([
+                    ("uevent", SysfsFile::RegularFile("")),
+                    ("subsystem", SysfsFile::Symlink("../../other")),
+                ])),
+            ),
+            ("class/typec", SysfsFile::Dir(HashMap::new())),
+            ("class/other", SysfsFile::Dir(HashMap::new())),
+        ]));
+        let sysfs_dir = MockSysfs::new(sysfs).unwrap();
+        let (mut watcher, mut stream) =
+            SysfsWatcher::with_root_dir(sysfs_dir.path()).await.unwrap();
+
+        watcher.watch_for_subsystem("typec");
+
+        // Event for typec - should be received
+        let uevent_typec = create_mock_uevent("add", "class/typec/port0", "typec", 1);
+        watcher.handle_uevent(uevent_typec).await.unwrap();
+
+        // Event for other - should be ignored
+        let uevent_other = create_mock_uevent("add", "class/other/dev0", "other", 2);
+        watcher.handle_uevent(uevent_other).await.unwrap();
+
+        let event = timeout(Duration::from_millis(100), stream.next())
+            .await
+            .expect("timed out waiting for event")
+            .unwrap();
+        assert_eq!(event.device.subsystem().unwrap(), "typec");
+
+        // There should be no more events
+        let result = timeout(Duration::from_millis(100), stream.next()).await;
+        assert!(result.is_err(), "Expected no more events");
     }
 }
