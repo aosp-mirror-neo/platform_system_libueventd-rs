@@ -9,9 +9,6 @@ use tokio::io::unix::AsyncFd;
 /// The netlink group for kernel uevents.
 const KOBJ_NL_GROUP_UEVENT: u32 = 1;
 
-/// The maximum expected size for a uevent message.
-const UEVENT_BUFFER_SIZE: usize = 8192;
-
 /// Creates a stream of `UEvent` messages from the kernel.
 ///
 /// This function sets up a `NETLINK_KOBJECT_UEVENT` netlink socket and
@@ -29,18 +26,15 @@ pub fn uevent_stream() -> Result<impl Stream<Item = Result<UEvent, Error>>, Erro
     let async_fd = AsyncFd::new(socket).map_err(Error::CreateSocket)?;
 
     Ok(async_stream::try_stream! {
-        // Buffer to receive data into. Uevents are typically small.
-        let mut buffer = vec![0u8; UEVENT_BUFFER_SIZE];
         loop {
             // Wait until the socket is readable
             let mut guard = async_fd.readable().await.map_err(Error::Recv)?;
             // Try to receive data from the socket
             match guard.try_io(|inner| {
-                inner.get_ref().recv(&mut buffer, 0)
+                inner.get_ref().recv_from_full()
             }) {
-                Ok(Ok(len)) => {
-                    // let uevent = parse_uevent(&buffer[..len])?;
-                    let uevent = UEvent::from_netlink_packet(&buffer[..len])
+                Ok(Ok((buf, _addr))) => {
+                    let uevent = UEvent::from_netlink_packet(&buf)
                         .map_err(|e| Error::ParseFailure(e.to_string()))?;
                     yield uevent;
                 },
