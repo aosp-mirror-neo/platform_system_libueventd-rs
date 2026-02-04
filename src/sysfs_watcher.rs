@@ -1,8 +1,8 @@
 use crate::device::Device;
 use crate::errors::Result;
-use crate::event::{DeviceEvent, DeviceType, EventType};
-
+use crate::event::{DeviceEvent, DeviceType, EventType, ExtraData};
 use crate::kuevent_wrappers::uevent_stream;
+
 use futures::{pin_mut, StreamExt};
 use kobject_uevent::ActionType;
 use kobject_uevent::UEvent;
@@ -73,7 +73,7 @@ impl SysfsWatcher {
 
         let device_path =
             self.root_sys_dir.join(uevent.devpath.strip_prefix("/").unwrap_or(&uevent.devpath));
-        let device_type = DeviceType::UEvent(uevent.clone());
+        let device_type = DeviceType::Raw;
 
         let Some(device) = Device::with_root_and_syspath(&self.root_sys_dir, device_path.clone())
         else {
@@ -109,7 +109,9 @@ impl SysfsWatcher {
             }
         }
 
-        let res = self.event_tx.send(DeviceEvent { event_type, device_type, device });
+        let extra_data = Some(ExtraData::Vars(uevent.env));
+
+        let res = self.event_tx.send(DeviceEvent { event_type, device_type, device, extra_data });
         if let Err(err) = res {
             warn!("Failed to send device event: {}", err);
         }
@@ -219,7 +221,11 @@ mod tests {
             .expect("timed out waiting for event")
             .unwrap();
         assert_eq!(event.event_type, EventType::Add);
-        assert_eq!(event.device_type, DeviceType::UEvent(uevent.clone()));
+        assert_eq!(event.device_type, DeviceType::Raw);
+        match event.extra_data {
+            Some(ExtraData::Vars(vars)) => assert_eq!(vars, uevent.env),
+            _ => panic!("extra data did not contain uevent vars"),
+        }
     }
 
     #[tokio::test]
@@ -252,7 +258,11 @@ mod tests {
             .expect("timed out waiting for event")
             .unwrap();
         assert_eq!(event.event_type, EventType::Add);
-        assert_eq!(event.device_type, DeviceType::UEvent(uevent.clone()));
+        assert_eq!(event.device_type, DeviceType::Raw);
+        match event.extra_data {
+            Some(ExtraData::Vars(vars)) => assert_eq!(vars, uevent.env),
+            _ => panic!("extra data did not contain uevent vars"),
+        }
     }
 
     #[tokio::test]
