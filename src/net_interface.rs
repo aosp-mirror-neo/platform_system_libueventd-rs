@@ -16,15 +16,15 @@ extern crate futures_channel;
 
 use crate::device::Device;
 use crate::errors::{Error, Result};
-use crate::event::{DeviceEvent, DeviceType, EventType};
+use crate::event::{DeviceEvent, DeviceType, EventType, ExtraData};
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use futures::stream::TryStreamExt;
 use log::{error, warn};
-use rtnetlink::constants::RTMGRP_LINK;
 use rtnetlink::packet_core::{NetlinkMessage, NetlinkPayload};
+use rtnetlink::packet_route::address::{AddressAttribute, AddressMessage};
 use rtnetlink::packet_route::link::{LinkAttribute, LinkMessage};
 use rtnetlink::packet_route::RouteNetlinkMessage;
 use rtnetlink::proto::Connection;
@@ -93,7 +93,10 @@ impl NetInterfaceWatcher {
 
         let (mut connection, handle, netlink_events) = rtnetlink::new_connection()?;
 
-        connection.socket_mut().socket_mut().add_membership(RTMGRP_LINK)?;
+        let socket = connection.socket_mut().socket_mut();
+        socket.add_membership(1 /* link */)?;
+        socket.add_membership(5 /* ipv4 ifaddr */)?;
+        socket.add_membership(9 /* ipv6 ifaddr */)?;
 
         let watcher = NetInterfaceWatcher {
             root_sys_dir: root_sys_dir.as_ref().to_path_buf(),
@@ -135,6 +138,7 @@ impl NetInterfaceWatcher {
             event_type: EventType::Add,
             device_type: DeviceType::NetInterface { index },
             device,
+            extra_data: None,
         });
         if let Err(err) = res {
             warn!("Failed to send device event: {err}");
@@ -154,6 +158,42 @@ impl NetInterfaceWatcher {
             event_type: EventType::Remove,
             device_type: DeviceType::NetInterface { index },
             device,
+            extra_data: None,
+        });
+        if let Err(err) = res {
+            warn!("Failed to send device event: {err}");
+        }
+        Ok(())
+    }
+
+    async fn handle_address_change(&mut self, msg: AddressMessage, added: bool) -> Result<()> {
+        let index = msg.header.index;
+        let Some(device) = self.tracked_interfaces.get(&index) else {
+            return Err(Error::Other(format!(
+                "Could not find tracked interface associated with index {index}"
+            )));
+        };
+
+        let Some(addr) = msg.attributes.iter().find_map(|attr| match attr {
+            AddressAttribute::Local(addr) => Some(*addr),
+            _ => None,
+        }) else {
+            return Err(Error::Other(format!(
+                "Address change message for interface at index {index} had no local address"
+            )));
+        };
+
+        let extra_data = Some(if added {
+            ExtraData::AddressAdded(addr)
+        } else {
+            ExtraData::AddressRemoved(addr)
+        });
+
+        let res = self.event_tx.send(DeviceEvent {
+            event_type: EventType::Change,
+            device_type: DeviceType::NetInterface { index },
+            device: device.clone(),
+            extra_data,
         });
         if let Err(err) = res {
             warn!("Failed to send device event: {err}");
@@ -165,6 +205,12 @@ impl NetInterfaceWatcher {
         match msg {
             RouteNetlinkMessage::NewLink(new_link_msg) => self.handle_new_link(new_link_msg).await,
             RouteNetlinkMessage::DelLink(del_link_msg) => self.handle_del_link(del_link_msg).await,
+            RouteNetlinkMessage::NewAddress(new_addr_msg) => {
+                self.handle_address_change(new_addr_msg, true).await
+            }
+            RouteNetlinkMessage::DelAddress(del_addr_msg) => {
+                self.handle_address_change(del_addr_msg, false).await
+            }
             // silently drop all other kinds of messages
             _ => Ok(()),
         }

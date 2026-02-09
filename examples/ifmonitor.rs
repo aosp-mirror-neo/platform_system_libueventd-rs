@@ -19,7 +19,7 @@ use std::error::Error;
 
 use log::{info, warn};
 use tokio_stream::StreamExt;
-use ueventd::event::{DeviceType, EventType};
+use ueventd::event::{DeviceType, EventType, ExtraData};
 use ueventd::net_interface::NetInterfaceWatcher;
 
 #[tokio::main]
@@ -56,6 +56,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
             EventType::Change => "c",
         };
 
-        println!("{event_type} {index:>4} {name}");
+        let extra_data = match event.extra_data {
+            Some(ExtraData::AddressAdded(addr)) => format!(" added address {}", addr),
+            Some(ExtraData::AddressRemoved(addr)) => format!(" removed address {}", addr),
+            Some(_) => " <unexpected extra data>".to_owned(),
+            None => String::new(),
+        };
+
+        println!("{event_type} {index:>4} {name}{extra_data}");
     }
 }
