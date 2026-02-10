@@ -137,6 +137,7 @@ impl Watcher {
                         devnode_path: path.as_ref().to_path_buf(),
                     },
                     device,
+                    extra_data: None,
                 });
                 if let Err(err) = res {
                     warn!("Failed to send device event: {err}");
@@ -166,6 +167,7 @@ impl Watcher {
             event_type: EventType::Add,
             device_type: DeviceType::DeviceNode { devnode_path: path.as_ref().to_path_buf() },
             device,
+            extra_data: None,
         });
         if let Err(err) = res {
             warn!("Failed to send device event: {err}");

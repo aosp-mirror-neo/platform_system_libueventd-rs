@@ -14,7 +14,8 @@
 
 use crate::device::Device;
 
-use kobject_uevent::UEvent;
+use std::collections::HashMap;
+use std::net::IpAddr;
 use std::path::PathBuf;
 
 /// Enum representing the type of event.
@@ -42,8 +43,20 @@ pub enum DeviceType {
         /// Index of the net interface.
         index: u32,
     },
-    /// A raw uevent.
-    UEvent(UEvent),
+    /// A raw device. It is identified entirely by the Device struct in the
+    /// event.
+    Raw,
+}
+
+/// This data may be included in device events, particularly change events.
+#[derive(Clone, Debug)]
+pub enum ExtraData {
+    /// UEvent vars.
+    Vars(HashMap<String, String>),
+    /// Net interface added a new address.
+    AddressAdded(IpAddr),
+    /// Net interface removed an address.
+    AddressRemoved(IpAddr),
 }
 
 /// Struct representing a device event. These are emitted by the watchers when
@@ -59,4 +72,6 @@ pub struct DeviceEvent {
     pub device_type: DeviceType,
     /// Device object representing the device this event concerns in sysfs.
     pub device: Device,
+    /// Extra data that may be present in this event.
+    pub extra_data: Option<ExtraData>,
 }
