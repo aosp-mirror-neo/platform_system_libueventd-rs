@@ -22,18 +22,23 @@ use std::path::{Path, PathBuf};
 
 /// Represents a directory within sysfs that can be queried (by reading
 /// files) for attributes of a device.
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FilesystemAttributeMap {
     dir_path: PathBuf,
 }
 
 impl FilesystemAttributeMap {
-    fn new<P: AsRef<Path>>(dir_path: P) -> FilesystemAttributeMap {
+    fn new<P: AsRef<Path>>(dir_path: P) -> Option<FilesystemAttributeMap> {
         if !dir_path.as_ref().is_dir() {
-            panic!("{} should be a directory", dir_path.as_ref().display());
+            return None;
         }
 
-        FilesystemAttributeMap { dir_path: dir_path.as_ref().to_path_buf() }
+        Some(FilesystemAttributeMap { dir_path: dir_path.as_ref().to_path_buf() })
+    }
+
+    /// Checks whether or not the given sysattr exists.
+    pub fn has(&self, key: &str) -> bool {
+        self.dir_path.join(key).try_exists().unwrap_or(false)
     }
 
     /// Reads the sysfs attribute with the given `key`.
@@ -109,6 +114,9 @@ pub struct Device {
 
     /// Path to sysfs directory representing this device.
     sysfs_path: PathBuf,
+
+    /// Interface to allow getting and setting sysfs attributes.
+    sysattrs: FilesystemAttributeMap,
 }
 
 impl Device {
@@ -118,23 +126,20 @@ impl Device {
         P: AsRef<Path>,
         Q: AsRef<Path>,
     {
-        if !sysfs_path.as_ref().is_dir() {
-            return None;
-        }
-
         if !sysfs_path.as_ref().starts_with(&sysfs_root) {
             return None;
         }
 
-        match sysfs_path.as_ref().join("uevent").try_exists() {
-            Ok(true) => {}
+        let sysattrs = FilesystemAttributeMap::new(&sysfs_path)?;
+        if !sysattrs.has("uevent") {
             // path does not describe a device, or we can't guarantee that it does
-            _ => return None,
+            return None;
         };
 
         Some(Device {
             sysfs_root: sysfs_root.as_ref().to_path_buf(),
             sysfs_path: sysfs_path.as_ref().to_path_buf(),
+            sysattrs,
         })
     }
 
@@ -264,12 +269,12 @@ impl Device {
     /// Returns an object allowing you to query and set sysfs attributes for this
     /// `Device`.
     pub fn sysattrs(&self) -> FilesystemAttributeMap {
-        FilesystemAttributeMap::new(self.sysfs_path.clone())
+        self.sysattrs.clone()
     }
 
     /// Returns a map of all uevent vars associated with this `Device`.
     pub fn vars(&self) -> HashMap<String, String> {
-        let Ok(uevent_vars) = self.sysattrs().get("uevent") else {
+        let Ok(uevent_vars) = self.sysattrs.get("uevent") else {
             return HashMap::new();
         };
 
