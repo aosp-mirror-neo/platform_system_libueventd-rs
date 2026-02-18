@@ -28,8 +28,8 @@ use rtnetlink::packet_route::address::{AddressAttribute, AddressMessage};
 use rtnetlink::packet_route::link::{LinkAttribute, LinkMessage};
 use rtnetlink::packet_route::RouteNetlinkMessage;
 use rtnetlink::proto::Connection;
-use rtnetlink::sys::{AsyncSocket, SocketAddr};
-use rtnetlink::Handle as NetlinkHandle;
+use rtnetlink::sys::SocketAddr;
+use rtnetlink::{Handle as NetlinkHandle, MulticastGroup};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::{Stream, StreamExt};
@@ -91,12 +91,11 @@ impl NetInterfaceWatcher {
     ) -> Result<(NetInterfaceWatcher, impl Stream<Item = DeviceEvent>)> {
         let (event_tx, event_rx) = mpsc::unbounded_channel();
 
-        let (mut connection, handle, netlink_events) = rtnetlink::new_connection()?;
-
-        let socket = connection.socket_mut().socket_mut();
-        socket.add_membership(1 /* link */)?;
-        socket.add_membership(5 /* ipv4 ifaddr */)?;
-        socket.add_membership(9 /* ipv6 ifaddr */)?;
+        let (connection, handle, netlink_events) = rtnetlink::new_multicast_connection(&[
+            MulticastGroup::Link,
+            MulticastGroup::Ipv4Ifaddr,
+            MulticastGroup::Ipv6Ifaddr,
+        ])?;
 
         let watcher = NetInterfaceWatcher {
             root_sys_dir: root_sys_dir.as_ref().to_path_buf(),
