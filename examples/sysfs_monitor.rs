@@ -20,7 +20,7 @@ use std::error::Error;
 use futures::StreamExt;
 use ueventd::sysfs_watcher::SysfsWatcher;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 

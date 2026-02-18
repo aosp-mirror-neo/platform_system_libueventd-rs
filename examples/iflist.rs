@@ -22,7 +22,7 @@ use std::error::Error;
 use log::warn;
 use ueventd::net_interface::get_interface_list;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
     let devices = get_interface_list().await?;
 
