@@ -175,7 +175,7 @@ impl NetInterfaceWatcher {
         };
 
         let Some(addr) = msg.attributes.iter().find_map(|attr| match attr {
-            AddressAttribute::Local(addr) => Some(*addr),
+            AddressAttribute::Address(addr) => Some(*addr),
             _ => None,
         }) else {
             return Err(Error::Other(format!(
