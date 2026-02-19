@@ -22,7 +22,7 @@ use tokio_stream::StreamExt;
 use ueventd::event::{DeviceType, EventType, ExtraData};
 use ueventd::net_interface::NetInterfaceWatcher;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
     let (mut watcher, mut events) = NetInterfaceWatcher::new().await?;
 
