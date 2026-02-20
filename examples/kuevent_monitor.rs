@@ -20,7 +20,7 @@ use std::boxed::Box;
 use std::error::Error;
 use ueventd::kuevent_wrappers::uevent_stream;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
     let stream = match uevent_stream() {

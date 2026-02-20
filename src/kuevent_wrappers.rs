@@ -23,6 +23,10 @@ pub fn uevent_stream() -> Result<impl Stream<Item = Result<UEvent, Error>>, Erro
     socket.bind(&addr).map_err(Error::BindSocket)?;
 
     // 2. Wrap the socket in Tokio's AsyncFd for non-blocking I/O
+    //
+    // It must be manually set nonblocking, otherwise recv in the loop
+    // will block waiting for data instead of returning back to the reactor.
+    socket.set_non_blocking(true).map_err(Error::SetSocketNonBlocking)?;
     let async_fd = AsyncFd::new(socket).map_err(Error::CreateSocket)?;
 
     Ok(async_stream::try_stream! {

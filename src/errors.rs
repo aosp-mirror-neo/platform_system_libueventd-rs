@@ -33,6 +33,9 @@ pub enum Error {
     /// Failed to bind netlink socket.
     #[error("Failed to bind netlink socket")]
     BindSocket(#[source] io::Error),
+    /// Failed to set netlink socket non-blocking.
+    #[error("Failed to set netlink socket non-blocking")]
+    SetSocketNonBlocking(#[source] io::Error),
     /// Failed to receive from netlink socket.
     #[error("Failed to receive from netlink socket")]
     Recv(#[source] io::Error),
